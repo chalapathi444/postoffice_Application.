@@ -1,113 +1,281 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import './models/PostOffice.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
-  runApp(MyApp());
+  runApp(Mypp());
 }
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+class Mypp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+    return MaterialApp(home: MyApp());
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class MyApp extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _MyAppState createState() => _MyAppState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
+class _MyAppState extends State<MyApp> {
+  //final pincodeController = TextEditingController();
+  //final navigatorKey = GlobalKey<NavigatorState>();
+  List<Postoffice> arr = [];
+  String city = "City";
+  String name = "Name";
+  String country = "Country";
+  String state = "State";
+  bool _isloading = false;
+  void call(
+      String nam, String circe, String county, String stae, BuildContext cont) {
+    print("$nam $circe $county $stae");
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      city = circe;
+      country = county;
+      state = stae;
+      name = nam;
     });
+    Navigator.pop(cont);
+  }
+
+  void onSave(String value) async {
+    print("heree too");
+
+    final response =
+        await http.get('https://api.postalpincode.in/pincode/' + value);
+    print(response);
+    List<dynamic> listData = json.decode(response.body)[0]['PostOffice'];
+    arr.clear();
+    for (int i = 0; i < listData.length; i++) {
+      arr.add(Postoffice(
+          country: listData[i]['Country'],
+          name: listData[i]['Name'],
+          circle: listData[i]['Block'],
+          state: listData[i]['State']));
+    }
+    print(arr);
+  }
+
+  void dialogue(BuildContext context, value) async {
+    await onSave(
+      value,
+    );
+    showDialog(
+        context: context,
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (builder, setState) {
+              return AlertDialog(
+                content: Container(
+                  height: MediaQuery.of(context).size.height / 2,
+                  width: MediaQuery.of(context).size.width - 30,
+                  child: ListView.builder(
+                    itemBuilder: (c, index) {
+                      return InkWell(
+                        onTap: () => call(arr[index].name, arr[index].circle,
+                            arr[index].country, arr[index].state, ctx),
+                        hoverColor: Colors.green,
+                        focusColor: Colors.green,
+                        child: Container(
+                          padding: EdgeInsets.all(20),
+                          height: 100,
+                          width: 100,
+                          child: Center(
+                            child: Text(
+                              arr[index].name,
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.black),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    itemCount: arr.length,
+                  ),
+                ),
+              );
+            },
+          );
+        });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
+      //  key: navigatorKey,
+      resizeToAvoidBottomPadding: false,
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        backgroundColor: Colors.black,
+        title: Text("Post office"),
+        centerTitle: true,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
+      body: LayoutBuilder(
+        builder: (builder, constraints) {
+          return Container(
+            height: constraints.maxHeight,
+            width: constraints.maxWidth,
+            // color: Colors.yellow[100],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  //  color: Colors.red,
+                  height: constraints.maxHeight / 8,
+                  width: constraints.maxWidth - 40,
+                  padding: EdgeInsets.all(20),
+                  child: TextField(
+                    //  controller: pincodeController,
+                    onChanged: (text) {
+                      setState(() {
+                        arr.clear();
+                        city = "City";
+                        country = "Country";
+                        name = "Name";
+                        state = "State";
+                      });
+                    },
+                    onSubmitted: (text) async {
+                      print("entering here");
+                      dialogue(context, text);
+                    },
+                    keyboardType: TextInputType.number,
+                    cursorColor: Colors.grey,
+                    decoration: InputDecoration(
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Colors.grey,
+                        ),
+                        hintText: "Search pincode",
+                        enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black87),
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(20))),
+                        focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black87),
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(20)))),
+                  ),
+                ),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          height: constraints.maxHeight / 8,
+                          width: constraints.maxWidth / 2,
+                          child: LayoutBuilder(
+                            builder: (context, innerconst) {
+                              return Padding(
+                                padding:
+                                    EdgeInsets.all(innerconst.maxWidth * 0.05),
+                                child: Container(
+                                  child: Center(
+                                    child: Text(
+                                      city,
+                                      style: TextStyle(
+                                          fontSize: 17, color: Colors.black),
+                                    ),
+                                  ),
+                                  decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(
+                                          innerconst.maxWidth * 0.08)),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        Container(
+                          height: constraints.maxHeight / 8,
+                          width: constraints.maxWidth / 2,
+                          child: LayoutBuilder(
+                            builder: (context, innerconst) {
+                              return Padding(
+                                padding:
+                                    EdgeInsets.all(innerconst.maxWidth * 0.05),
+                                child: Container(
+                                  child: Center(
+                                    child: Text(
+                                      country,
+                                      style: TextStyle(
+                                          fontSize: 17, color: Colors.black),
+                                    ),
+                                  ),
+                                  decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(
+                                          innerconst.maxWidth * 0.08)),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          height: constraints.maxHeight / 8,
+                          width: constraints.maxWidth / 2,
+                          child: LayoutBuilder(
+                            builder: (context, innerconst) {
+                              return Padding(
+                                padding:
+                                    EdgeInsets.all(innerconst.maxWidth * 0.05),
+                                child: Container(
+                                  child: Center(
+                                    child: Text(
+                                      name,
+                                      style: TextStyle(
+                                          fontSize: 17, color: Colors.black),
+                                    ),
+                                  ),
+                                  decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(
+                                          innerconst.maxWidth * 0.08)),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        Container(
+                          height: constraints.maxHeight / 8,
+                          width: constraints.maxWidth / 2,
+                          child: LayoutBuilder(
+                            builder: (context, innerconst) {
+                              return Padding(
+                                padding:
+                                    EdgeInsets.all(innerconst.maxWidth * 0.05),
+                                child: Container(
+                                  child: Center(
+                                    child: Text(
+                                      state,
+                                      style: TextStyle(
+                                          fontSize: 17, color: Colors.black),
+                                    ),
+                                  ),
+                                  decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(
+                                          innerconst.maxWidth * 0.08)),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
+          );
+        },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
